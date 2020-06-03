@@ -1,0 +1,12 @@
+92cd8ed4f6387ec89dacdcf144409173 *DESCRIPTION
+cecd052fb5eab41b0e82e00d9117f45b *NAMESPACE
+b61c72e559baf499600777c3e3538336 *R/acoustic_auth.R
+f81833d6d431452bdcb76bc2a317706a *R/get_all_contacts.R
+8352731ccf7d1dec04856d110b89fd17 *R/get_job_status.R
+d0678b0c87eb0e48e2cd330599780522 *R/utils.R
+4a1af716d64c1f75a1f4197cde65aafc *README.md
+c099ccbd21b510a0fc7a518b5652f075 *man/acoustic_auth.Rd
+4eb71f5298c0e92add562ff80c479f44 *man/check_request_status.Rd
+1c1698b0eb20a376cb036c45f6da4a7e *man/get_all_contacts.Rd
+0fc990ad23b1435241e4692189b3e878 *man/get_job_id.Rd
+f4c1c9c5793425420daca3ec33a64123 *man/get_job_status.Rd
