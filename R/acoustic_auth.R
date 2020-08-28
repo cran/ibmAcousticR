@@ -26,6 +26,7 @@
 #' engage1.silverpop.com.
 #' 
 #' @importFrom jsonlite "fromJSON"
+#' @importFrom httr "RETRY"
 #' @importFrom httr "POST"
 #' @importFrom httr "content"
 #' @importFrom httr "add_headers"
@@ -49,14 +50,21 @@ acoustic_auth <- function(org_client_id, org_client_secret, my_refresh_token, po
              client_id = org_client_id,
              client_secret = org_client_secret,
              refresh_token = my_refresh_token)
-  
+
   # Submit the request
-  request <- httr::POST(url = paste0("https://api-campaign-us-", pod_number, ".goacoustic.com/oauth/token"),
+  request <- httr::RETRY("POST",
+                        url = paste0("https://api-campaign-us-", pod_number, ".goacoustic.com/oauth/token"),
                         httr::add_headers("Content-Type" = "application/x-www-form-urlencoded"),
                         body = body_parameters,
-                        encode = "form")
+                        encode = "form",
+                        times = 4,
+                        pause_min =10,
+                        terminate_on = NULL,
+                        terminate_on_success = TRUE,
+                        pause_cap = 5)
   
   check_request_status(request)
+  check_for_faulty_xml(request)
   
   # Get and return the access_token
   request_content <- httr::content(request, "text", encoding = "ISO-8859-1")

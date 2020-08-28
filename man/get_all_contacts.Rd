@@ -12,6 +12,7 @@ get_all_contacts(
   date_type = "EVENT",
   event_types = "<ALL_EVENT_TYPES/>",
   export_format = 0,
+  move_to_ftp = FALSE,
   exclude_deleted = FALSE,
   optional_columns = TRUE,
   file_name_prefix = "",
@@ -36,17 +37,21 @@ types are returned. This parameter takes XML arguments where you can
 override the default and specify all of the events you want. See the
 Acoustic documentation for the full list.}
 
-\item{export_format}{Acoustic provides three delimeter file types:
+\item{export_format}{Acoustic provides three delimiter file types:
 0 (CSV), 1 (PIPE), or 2 (TAB). CSV is the default used here.}
+
+\item{move_to_ftp}{If TRUE (default is FALSE) will send files to SFTP
+server instead of being able to download manually from the portal.}
 
 \item{exclude_deleted}{Do you want to exclude contacts that have been
 deleted, can be TRUE/FALSE. Per Acoustic, "Inclusion of this
 element can greatly decrease the time to generate the metrics file and
 is useful whenever metrics for deleted contacts are not required."}
 
-\item{optional_columns}{Do you want to include four optional columns
+\item{optional_columns}{Do you want to include six optional columns
 in the results, can be TRUE/FALSE. These columns are the mailing name,
-mailing subject, the from email address and the from email name.}
+mailing subject, from email address, from email name, CRM campaign Id,
+and program Id.}
 
 \item{file_name_prefix}{Optional argument that should be used if you
 want to add a particular prefix to the file that you will download
@@ -67,7 +72,7 @@ https://developer.ibm.com/customer-engagement/tutorials/
 export-raw-contact-events/
 }
 \details{
-The date type is sent to EVENT by default. If you filter by the sent
+The date type is set to EVENT by default. If you filter by the sent
 date you may not get all applicable events, as some events (a future
 click) will not yet have happened. If you do filter by SENT date and
 are incrementally updating your data you should plan to go back and

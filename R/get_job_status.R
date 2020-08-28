@@ -11,6 +11,7 @@
 #' @param desired_job_id Id for job for which you want the status.
 #' 
 #' @importFrom jsonlite "fromJSON"
+#' @importFrom httr "RETRY"
 #' @importFrom httr "POST"
 #' @importFrom httr "content"
 #' @importFrom httr "add_headers"
@@ -44,15 +45,22 @@ get_job_status <- function(pod_number, session_access_token, desired_job_id) {
       </Body>
     </Envelope>
     ")
-  
-  # Submit the request
-  request <- httr::POST(url = paste0("https://api-campaign-us-", pod_number, ".goacoustic.com/XMLAPI"),
+
+    # Submit the request
+  request <- httr::RETRY("POST",
+                        url = paste0("https://api-campaign-us-", pod_number, ".goacoustic.com/XMLAPI"),
                         httr::add_headers("Content-Type" = "text/xml;charset=utf-8",
                                           "Authorization" = paste0("Bearer ", session_access_token)),
                         body = xml_parameters,
-                        encode = "json")
+                        encode = "json",
+                        times = 4,
+                        pause_min = 10,
+                        terminate_on = NULL,
+                        terminate_on_success = TRUE,
+                        pause_cap = 5)
 
   check_request_status(request)
+  check_for_faulty_xml(request)
   
   # Extract and return the job status
   request_content <- httr::content(request, "text", encoding = "ISO-8859-1")

@@ -14,6 +14,7 @@
 #' 
 #' @param request_obj Name of the object returned from API call,
 #' should always be "request".
+#' @param path XML path to the job id.
 #' 
 #' @importFrom httr "content"
 #' @importFrom XML "xmlParse"
@@ -25,13 +26,13 @@
 #' @keywords internal
 
 
-get_job_id <- function(request_obj) {
+get_job_id <- function(request_obj, path) {
   # Extract the XML from the request results
   request_content <- httr::content(request_obj, "text", encoding = "ISO-8859-1")
   request_xml <- XML::xmlParse(request_content)
   
   # Return the job id
-  job_id <- XML::xpathSApply(request_xml, "//Envelope/Body/RESULT/MAILING/JOB_ID", XML::xmlValue)
+  job_id <- XML::xpathSApply(request_xml, path, XML::xmlValue)
   message(paste0("Submit was successful, Job Id: ", job_id))
   return(job_id)
 }
@@ -52,10 +53,47 @@ get_job_id <- function(request_obj) {
 check_request_status <- function(request_obj) {
   if (request_obj$status_code == 401) {
     message(paste0("There was a 401 error. Do you need to refresh your access token?"))
-    stop()
+    stop_quietly()
   } else if (request_obj$status_code != 200) {
     message(paste0("There was an authentication error: ", request_obj$status_code))
-    stop()
+    stop_quietly()
   }
 } 
 
+
+#' Stop Function Quietly
+#' 
+#' Quit a function execution without printing error messages. The
+#' idea came from a Stack Overflow answer 
+#' https://stackoverflow.com/questions/14469522/stop-an-r-program-without-error. 
+#' 
+#' @return Exits a function.
+#' 
+#' @keywords internal
+
+
+stop_quietly <- function() {
+  opt <- options(show.error.messages = FALSE)
+  on.exit(options(opt))
+  stop()
+}
+
+
+#' Detect Faulty XML Request
+#' 
+#' Searches the results content for the tag "<FaultString>". If it
+#' is found it gives the user a message and exits the function.
+#' 
+#' @importFrom httr "content"
+#' 
+#' @return Message to the console.
+#' 
+#' @keywords internal
+
+check_for_faulty_xml <- function(request_obj) {
+  if(length(grep("<FaultString>", httr::content(request_obj, "text", encoding = "ISO-8859-1"))) >= 1) {
+    message("Faulty XML request. Check your parameters. Full result text:")
+    message(httr::content(request_obj, "text", encoding = "ISO-8859-1"))
+    stop_quietly()
+  }
+}

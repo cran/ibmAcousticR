@@ -7,7 +7,7 @@
 #' https://developer.ibm.com/customer-engagement/tutorials/
 #' export-raw-contact-events/
 #'
-#' The date type is sent to EVENT by default. If you filter by the sent
+#' The date type is set to EVENT by default. If you filter by the sent
 #' date you may not get all applicable events, as some events (a future
 #' click) will not yet have happened. If you do filter by SENT date and
 #' are incrementally updating your data you should plan to go back and
@@ -32,15 +32,18 @@
 #' types are returned. This parameter takes XML arguments where you can
 #' override the default and specify all of the events you want. See the
 #' Acoustic documentation for the full list.
-#' @param export_format Acoustic provides three delimeter file types: 
+#' @param export_format Acoustic provides three delimiter file types: 
 #' 0 (CSV), 1 (PIPE), or 2 (TAB). CSV is the default used here.
+#' @param move_to_ftp If TRUE (default is FALSE) will send files to SFTP 
+#' server instead of being able to download manually from the portal.
 #' @param exclude_deleted Do you want to exclude contacts that have been
 #' deleted, can be TRUE/FALSE. Per Acoustic, "Inclusion of this 
 #' element can greatly decrease the time to generate the metrics file and 
 #' is useful whenever metrics for deleted contacts are not required."
-#' @param optional_columns Do you want to include four optional columns
+#' @param optional_columns Do you want to include six optional columns
 #' in the results, can be TRUE/FALSE. These columns are the mailing name,
-#' mailing subject, the from email address and the from email name.
+#' mailing subject, from email address, from email name, CRM campaign Id,
+#' and program Id.
 #' @param file_name_prefix Optional argument that should be used if you 
 #' want to add a particular prefix to the file that you will download
 #' from your portal.
@@ -48,6 +51,7 @@
 #' where IBM will let you know when the job has completed. 
 #' 
 #' @importFrom jsonlite "fromJSON"
+#' @importFrom httr "RETRY"
 #' @importFrom httr "POST"
 #' @importFrom httr "content"
 #' @importFrom httr "add_headers"
@@ -71,9 +75,9 @@
 get_all_contacts <- function(pod_number, session_access_token, start_date, 
                              end_date, date_type = "EVENT", 
                              event_types = "<ALL_EVENT_TYPES/>", 
-                             export_format = 0, exclude_deleted = FALSE, 
-                             optional_columns = TRUE, file_name_prefix = "", 
-                             confirm_email = "") {
+                             export_format = 0, move_to_ftp = FALSE, 
+                             exclude_deleted = FALSE, optional_columns = TRUE,
+                             file_name_prefix = "", confirm_email = "") {
   
   # Reformat the dates
   start_date2 <- as.character(format(as.Date(start_date), "%m/%d/%Y"))
@@ -93,6 +97,7 @@ get_all_contacts <- function(pod_number, session_access_token, start_date,
             )
           ),
           "<EXPORT_FORMAT>", export_format, "</EXPORT_FORMAT>",
+          ifelse(move_to_ftp == FALSE, "","<MOVE_TO_FTP/>"),
           ifelse(file_name_prefix != "", paste0("<EXPORT_FILE_NAME>", file_name_prefix, "</EXPORT_FILE_NAME>"), ""),
           ifelse(confirm_email != "", paste0("<EMAIL>", confirm_email, "</EMAIL>"), ""),
           event_types,
@@ -101,23 +106,32 @@ get_all_contacts <- function(pod_number, session_access_token, start_date,
             "<RETURN_MAILING_NAME/>
             <RETURN_SUBJECT/>
             <RETURN_FROM_ADDRESS/>
-            <RETURN_FROM_NAME/>", ""),
+            <RETURN_FROM_NAME/>
+            <RETURN_CRM_CAMPAIGN_ID/>
+            <RETURN_PROGRAM_ID/>", ""),
         "</RawRecipientDataExport>
       </Body>
     </Envelope>
     ")
-  
+
   # Submit the request
-  request <- httr::POST(url = paste0("https://api-campaign-us-", pod_number, ".goacoustic.com/XMLAPI"),
+  request <- httr::RETRY("POST",
+                        url = paste0("https://api-campaign-us-", pod_number, ".goacoustic.com/XMLAPI"),
                         httr::add_headers("Content-Type" = "text/xml;charset=utf-8",
                                           "Authorization" = paste0("Bearer ", session_access_token)),
                         body = xml_parameters,
-                        encode = "json")
+                        encode = "json",
+                        times = 4,
+                        pause_min = 10,
+                        terminate_on = NULL,
+                        terminate_on_success = TRUE,
+                        pause_cap = 5)
   
   check_request_status(request)
+  check_for_faulty_xml(request)
   
   # Get and return the Job Id
-  job_id <- get_job_id(request)
+  job_id <- get_job_id(request, "//Envelope/Body/RESULT/MAILING/JOB_ID")
   return(job_id)
   
 }

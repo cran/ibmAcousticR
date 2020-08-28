@@ -4,11 +4,13 @@
 \alias{get_job_id}
 \title{Get Job Id of Submitted Job}
 \usage{
-get_job_id(request_obj)
+get_job_id(request_obj, path)
 }
 \arguments{
 \item{request_obj}{Name of the object returned from API call,
 should always be "request".}
+
+\item{path}{XML path to the job id.}
 }
 \value{
 A vector with the Job Id.
